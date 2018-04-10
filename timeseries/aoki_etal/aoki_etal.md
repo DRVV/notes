@@ -1,6 +1,10 @@
-[INCLUDE=presentation]
+// [INCLUDE=PRESENTATION]
 
-# title
+~ MathDefs
+\newcommand{\paren}[1]{\left ( #1 \right ) }
+\newcommand{\curly}[1]{\left \{ #1 \right \} }
+\newcommand{\mean}[1]{\bar{#1}}
+~
 
 # 時系列データとは
 
@@ -14,7 +18,7 @@
 
 - たとえば地震．発生時刻やその時間間隔が意味を持っている
 
-- 発生間隔を観測者が設定できない →　時系列データの定義を外れている
+-  発生間隔を観測者が設定できない →　時系列データの定義を外れている
 
     - 為替取引がリアルタイムに記録されたもの
 
@@ -56,9 +60,7 @@
 
 	- しかも，ヒストグラムは標本抽出の順序を考慮していない（＝無作為の復元抽出）　→　毎回の標本抽出は互いに独立と認めている
 
-## hoge
-
-- 時系列データに対してこのようなヒストグラムを作り，それを妥当なものだと判断したのならば，抽出順（時間情報）は全く無意味であるということ
+- 時系列データに対してこのようなヒスとgラムを作り，それを妥当なものだと判断したのならば，抽出順（時間情報）は全く無意味であるということ
 
 - 時系列分析では，この時間情報も重要な情報源と考える
 
@@ -171,4 +173,110 @@
 	- 単位根過程の系列を独立同一に取り扱うと，__見せかけの回帰__問題が発生する
 
 	- 単位根過程に関連する概念，共和分，ペアトレーディングにもふれる
+
+# 3-1 時間依存の表現
+
+
+## 自己相関
+
+時系列データの各時点間での依存関係を時間依存とよぶことにする．時間依存性はどのように表現すればよいか？
+
+- 1時点前との値との相関　= __ラグ1の自己相関__
+
+- 自己相関の相関係数 = 自己相関係数 ...　*ではない*
+
+- ラグ$h$の自己相関係数は次式で定義する
+
+~Equation
+
+	\frac{\sum_{t=h+1}^{n} \paren{r_t - \mean{r}}\paren{r_{t-h} - \mean{r}}}
+	{\sum_{t=1}^{n} \paren{r_t - \mean{r}}^2},
+
+~ 
+
+where
+
+~Equation
+	\mean{r} := \frac{1}{n} \sum_{t=1}^{n} r_t
+~
+
+## コレログラム
+
+横軸にラグ$h$，縦軸に自己相関係数をプロットしたもの
+
+- Rでは`acf` (Auto Correlation Function)関数で計算可能
+
+	- デフォルトでは帰無仮説信頼度95%区間も出力する
+
+## 偏自己相関
+
+ラグ1の自己相関が積み重なっている場合には，ラグ$h$の自己相関が見えてしまう．つまり関係「自己相関がある」は推移律を満たす．
+
+推移律で結ばれる相関を除去した相関係数を__偏自己相関係数__という尺度で測る（定義なし）
+
+- Rでは`acf(data, type="partial")`で計算可能
+
+## 検定による自己相関の発見
+
+自己相関・偏自己相関を観察するのが一般的だが，統計的検定に頼ることもできる→__Ljung-Box検定__ （定義なし）
+
+- 帰無仮説「ラグ$k$までの自己相関係数がゼロである」の検定
+
+- Rでは`Box.test(data, type="Ljung-Box")`で実行可能
+
+
+## AR(AutoRegressive) modelの導入
+
+$AR(p)$-modelの定義(Wikipedia) ：
+
+~~ Equation
+X_t = c + \sum_{i=1}^{p} \phi_i X_{t-i} + \epsilon_t,
+~~
+where $\phi_i (i=1,\dots, p)$ are *parameters* of the model, $c$ is a constant, and $\epsilon_t$ is *white noise*.
+
+## Stationarity
+
+定義：
+
+- strong/strict stationarity:  cumulantが時間に依存しないこと。 →　mean, variance, ... など全てのmomentが時間に依存しない
+
+~~ Equation
+\forall k, \tau \quad F_X \paren{x_{t_1 + \tau}, \dots, x_{t_k+\tau}} = F_X \paren{x_{t_1}, \dots, x_{t_k}},
+~~
+where $F_X$ is the cumulative distribution of the unconditional joint distribution of $\curly{X_t}$.
+
+- weak/wide-sense stationarity:  mean，autocovarianceが時間依存しないこと
+
+例：
+
+- White noise
+
+- $Y$をscalar random variableとして$X_t = Y (t \in \mathbb{R}$　→　一系列は全部同じ値(e.g. $\curly{3,3,3, \dots}$) 
+
+## AR(1)の性質を簡単に調べる
+
+~~ Equation
+X_t = c + \phi X_{t-1} + \epsilon_t
+~~
+
+~~ Theorem
+$\abs{\phi} < 1$のとき，AR(1)は（漸近的に）stationaryである。
+~~
+
+
+~~ Proof
+確率変数に関する方程式を漸化式と見て解くと
+~~~ Equation
+  X_t = c \sum_{i=0}^{t-1}\phi^i + \phi^t X_0 + \sum_{i=0}^{t-1} \phi^i \epsilon_{t-i}
+~~~
+$t$が十分大のとき，$\abs{\phi} < 1$であれば収束し，
+~~~ Equation
+  X_t = \frac{c}{1-\phi} + \sum_{i=0}^{t-1} \phi^i \epsilon_{t-i}
+~~~
+~~
+
+~~ Remark
+これをみると，期待値は確かに時間依存していないが，$t \to \infty$はどの程度必然的なのかよくわからん。
+~~
+
 
